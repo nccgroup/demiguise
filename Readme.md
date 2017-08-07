@@ -16,7 +16,7 @@ The aim of this project is to generate `.html` files that *contain an encrypted 
 
 This is achieved by encrypting the HTA file using RC4, and then using `navigator.msSaveBlob` to "save" the file at runtime - rather than fetching the HTA directly from the server. Meaning that at no point is there any HTTP request/response that contains your HTA file in a plain-text form - the proxy will simply see a `text/html` file containing your encrypted blob. In the latest version of Edge, this will result in the user being prompted to "run" the HTA.
 
-Although not the primary aim of this tool, there are a couple of payload-options for the underlying HTA. Each option uses different techniques as previously documented by [Matt Nelson](https://twitter.com/enigma0x3/status/870810601483894784 "Matt Nelson"), [Matthew Demaske](https://github.com/MatthewDemaske/ThreatHuntingStuff/tree/master/HTAtricks "Matthew Demaske") and [Etienne Stalmans](https://twitter.com/_staaldraad/status/889171980641021954 "Etienne Stalmans"). The benefit of using these techniques is that your code does not execute as a child of `mshta.exe`. As mentioned previously, the content of the HTA is not the primary aim of this tool. I'd encourage you to modify the HTA template to contain your own custom code :)
+Although not the primary aim of this tool, there are a couple of payload-options for the underlying HTA. Each option uses different techniques as previously documented by [Matt Nelson](https://twitter.com/enigma0x3/status/870810601483894784 "Matt Nelson"), [Matthew Demaske](https://github.com/MatthewDemaske/ThreatHuntingStuff/tree/master/HTAtricks "Matthew Demaske"), [Ryan Hanson](https://twitter.com/ryHanson) and [Etienne Stalmans](https://twitter.com/_staaldraad/status/889171980641021954 "Etienne Stalmans"). The benefit of using these techniques is that your code does not execute as a child of `mshta.exe`. As mentioned previously, the content of the HTA is not the primary aim of this tool. I'd encourage you to modify the HTA template to contain your own custom code :)
 
 ## How do I run it? ##
 
@@ -62,6 +62,10 @@ Please note that these changes may potentially affect the running of software th
 
 ![](https://media.giphy.com/media/xUOrwiKh5KcKMYl89q/giphy.gif)
 
+**Changing it back (x64):**
+
+    ftype htafile=C:\Windows\SysWOW64\mshta.exe "%1" {1E460BD7-F1C3-4B2E-88BF-4E770A288AF5}%U{1E460BD7-F1C3-4B2E-88BF-4E770A288AF5} %*
+
 ## FAQ ##
 
 - Doesn't this drop to disk?
@@ -70,3 +74,15 @@ Please note that these changes may potentially affect the running of software th
 	- The aim of the tool is to avoid being executed in a sandbox in the first place. If you pick your keys wisely, the HTA will not even decrypt correctly, nor will $product know it's an HTA file - meaning it cannot be executed by the sandbox.
 - How do I find an environmental key source without first having access to the target network?
 	- This is left as an exercise for the reader, however this can often be discovered with some good OSINT. If you are carrying out fingerprinting campaigns, check out [WebFEET](https://github.com/nccgroup/WebFEET "WebFEET") and [BeEF](https://github.com/beefproject/beef/wiki/Network-Discovery#get-http-servers "BeEF") for some inspiration.
+
+## Greetz / Prior Art ##
+
+- [Matt Nelson](https://twitter.com/enigma0x3 "Matt Nelson") - `WbemScripting.SWbemLocator` & ShellBrowserWindow COM execution Techniques
+- [Matthew Demaske](https://github.com/MatthewDemaske/ThreatHuntingStuff/tree/master/HTAtricks) - `WbemScripting.SWbemLocator` COM execution PoC
+- [Ryan Hanson](https://gist.github.com/ryhanson/227229866af52e2d963cf941af135a52) - `Excel.Application.RegisterXLL` COM execution technique
+- [Etienne Stalmans](https://twitter.com/_staaldraad/status/889171980641021954) - `Outlook.Application.CreateObject` COM execution technique
+- [Brandon Arvanaghi](https://twitter.com/arvanaghi) and [Chris Truncer's](https://twitter.com/christruncer) [CheckPlease tool.](https://github.com/Arvanaghi/CheckPlease)
+- [The Empire Project](https://github.com/EmpireProject/Empire)
+
+
+
