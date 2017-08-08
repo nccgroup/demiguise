@@ -42,7 +42,7 @@ Also, Outlook doesn't block `.html` attachments by default , and neither do some
 
 ## Detection ##
 
-Please don't upload to VT - but if you're curious..
+Currently it is not detected on VT:
 
 [https://www.virustotal.com/en/file/24b86ee6210b2abc446021feacfe25502b60403455aa24a32c80b2e7b0f81a70/analysis/1499880541/](https://www.virustotal.com/en/file/24b86ee6210b2abc446021feacfe25502b60403455aa24a32c80b2e7b0f81a70/analysis/1499880541/)
 
