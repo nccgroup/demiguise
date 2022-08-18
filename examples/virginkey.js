@@ -1,3 +1,4 @@
+// WINNER, 🏆 2019 Guardies – best execution guardrails in an offensive security tool public release – https://twitter.com/ItsReallyNick/status/1189622906369781762 
 var getKey = function (){
 	// replace function name with one specified in your HTA file
 	var img = new Image();
